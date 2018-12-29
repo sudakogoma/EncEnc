@@ -15,7 +15,9 @@ namespace EncEnc
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            var viewModel = new MainFormViewModel();
+            Application.Run(new MainForm(viewModel));
         }
     }
 }
