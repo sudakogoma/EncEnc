@@ -51,7 +51,7 @@
             this.txtPassword.Location = new System.Drawing.Point(71, 32);
             this.txtPassword.Name = "txtPassword";
             this.txtPassword.Size = new System.Drawing.Size(268, 19);
-            this.txtPassword.TabIndex = 1;
+            this.txtPassword.TabIndex = 4;
             // 
             // txtFilePath
             // 
@@ -68,7 +68,7 @@
             this.label2.Location = new System.Drawing.Point(8, 35);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(56, 12);
-            this.label2.TabIndex = 2;
+            this.label2.TabIndex = 3;
             this.label2.Text = "&Password:";
             // 
             // label1
@@ -77,7 +77,7 @@
             this.label1.Location = new System.Drawing.Point(9, 10);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(49, 12);
-            this.label1.TabIndex = 2;
+            this.label1.TabIndex = 0;
             this.label1.Text = "&FilePath:";
             // 
             // btnBrowse
@@ -86,7 +86,7 @@
             this.btnBrowse.Location = new System.Drawing.Point(346, 3);
             this.btnBrowse.Name = "btnBrowse";
             this.btnBrowse.Size = new System.Drawing.Size(69, 27);
-            this.btnBrowse.TabIndex = 3;
+            this.btnBrowse.TabIndex = 2;
             this.btnBrowse.Text = "Browse...";
             this.btnBrowse.UseVisualStyleBackColor = true;
             this.btnBrowse.Click += new System.EventHandler(this.btnBrowse_Click);
@@ -98,7 +98,7 @@
             this.cmbExecuteMode.Location = new System.Drawing.Point(71, 57);
             this.cmbExecuteMode.Name = "cmbExecuteMode";
             this.cmbExecuteMode.Size = new System.Drawing.Size(121, 20);
-            this.cmbExecuteMode.TabIndex = 4;
+            this.cmbExecuteMode.TabIndex = 6;
             // 
             // label3
             // 

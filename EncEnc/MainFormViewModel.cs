@@ -60,6 +60,9 @@ namespace EncEnc
 
         #endregion
 
+        /// <summary>
+        /// ファイル選択ダイアログを用いてファイルを選択します。
+        /// </summary>
         public void SelectFile()
         {
             using (var dialog = new OpenFileDialog())
@@ -71,88 +74,92 @@ namespace EncEnc
             }
         }
 
+        /// <summary>
+        /// 指定されたファイルを指定パスワードを用いて暗号化します。}
+        /// </summary>
         public void Encrypt()
         {
-            const int SALT_SIZE = 16;
-            const int KEY_SIZE = 16;
-
             string outputFilePath = Path.Combine(
                 Path.GetDirectoryName(this.FilePath),
-                $"{Path.GetFileNameWithoutExtension(this.FilePath)}.dat");
+                $"{Path.GetFileNameWithoutExtension(this.FilePath)}.enc");
 
-            using (var outputStream = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
+            using (var memoryStream = new MemoryStream())
             using (var aes = new AesManaged())
             {
-                aes.BlockSize = 128;
-                aes.KeySize = KEY_SIZE * 8;
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
-
-                var deriveBytes = new Rfc2898DeriveBytes(this.Password, SALT_SIZE);
-                aes.Key = deriveBytes.GetBytes(KEY_SIZE);
+                var deriveBytes = new Rfc2898DeriveBytes(this.Password, Define.SALT_SIZE);
+                aes.Key = deriveBytes.GetBytes(Define.KEY_SIZE);
                 aes.GenerateIV();
 
-                outputStream.Write(deriveBytes.Salt, 0, SALT_SIZE);
-                outputStream.Write(aes.IV, 0, 16);
+                memoryStream.Write(deriveBytes.Salt, 0, deriveBytes.Salt.Length);
+                memoryStream.Write(aes.IV, 0, aes.IV.Length);
 
-                ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+                ICryptoTransform encryptor = aes.CreateEncryptor();
 
-                using (var cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
+                using (var cryptoStream = new CryptoStream(memoryStream, encryptor, CryptoStreamMode.Write))
                 using (var deflateStream = new DeflateStream(cryptoStream, CompressionMode.Compress))
-                using (var fs = new FileStream(this.FilePath, FileMode.Open, FileAccess.Read))
+                using (var fileStream = new FileStream(this.FilePath, FileMode.Open, FileAccess.Read))
                 {
                     int len;
                     var buffer = new byte[4096];
-                    while ((len = fs.Read(buffer, 0, 4096)) > 0)
+                    while ((len = fileStream.Read(buffer, 0, 4096)) > 0)
                     {
                         deflateStream.Write(buffer, 0, len);
                     }
                 }
+
+                using (var outputStream = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
+                using (var streamWriter = new StreamWriter(outputStream))
+                {
+                    streamWriter.Write(Convert.ToBase64String(memoryStream.ToArray()));
+                }
             }
         }
 
+        /// <summary>
+        /// 指定されたファイルを指定パスワードを用いて復号化します。
+        /// </summary>
         public void Decrypt()
         {
             string outputFilePath = Path.Combine(
                 Path.GetDirectoryName(this.FilePath),
                 Path.GetFileNameWithoutExtension(this.FilePath));
 
-            using (var outputStream = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
-            using (var fs = new FileStream(this.FilePath, FileMode.Open, FileAccess.Read))
+            using (var memoryStream = new MemoryStream())
             using (var aes = new AesManaged())
             {
-                aes.BlockSize = 128;
-                aes.KeySize = 128;
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
+                using (var fs = new FileStream(this.FilePath, FileMode.Open, FileAccess.Read))
+                using (var sr = new StreamReader(fs))
+                {
+                    var x = Convert.FromBase64String(sr.ReadToEnd());
+                    memoryStream.Write(x, 0, x.Length);
+                    memoryStream.Position = 0;
+                }
 
-                var salt = new byte[16];
-                fs.Read(salt, 0, 16);
-
-                // Initilization Vector
-                byte[] iv = new byte[16];
-                fs.Read(iv, 0, 16);
-                aes.IV = iv;
+                var salt = new byte[Define.SALT_SIZE];
+                memoryStream.Read(salt, 0, salt.Length);
 
                 var deriveBytes = new Rfc2898DeriveBytes(this.Password, salt);
-                byte[] bufferKey = deriveBytes.GetBytes(16);
-                aes.Key = bufferKey;
+                aes.Key = deriveBytes.GetBytes(Define.KEY_SIZE);
 
-                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+                var iv = new byte[aes.IV.Length];
+                memoryStream.Read(iv, 0, iv.Length);
+                aes.IV = iv;
 
-                using (var cryptoStream = new CryptoStream(fs, decryptor, CryptoStreamMode.Read))
+                ICryptoTransform decryptor = aes.CreateDecryptor();
+
+                using (var outputStream = new FileStream(outputFilePath, FileMode.Create, FileAccess.Write))
+                using (var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read))
+                using (var deflateStream = new DeflateStream(cryptoStream, CompressionMode.Decompress))
                 {
-                    using (var defaultStream = new DeflateStream(cryptoStream, CompressionMode.Decompress))
+                    int len;
+                    var buffer = new byte[4096];
+                    while ((len = deflateStream.Read(buffer, 0, 4096)) > 0)
                     {
-                        int len;
-                        var buffer = new byte[4096];
-                        while ((len = defaultStream.Read(buffer, 0, 4096)) > 0)
-                        {
-                            outputStream.Write(buffer, 0, len);
-                        }
+                        outputStream.Write(buffer, 0, len);
                     }
                 }
             }
+
         }
     }
 }

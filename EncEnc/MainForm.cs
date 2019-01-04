@@ -36,6 +36,8 @@ namespace EncEnc
             {
                 this._viewModel.Decrypt();
             }
+
+            MessageBox.Show("Done.");
         }
 
         private void SetBind()
